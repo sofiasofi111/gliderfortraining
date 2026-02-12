@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Планер навчання</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container-app">
+        <div id="overlay" class="overlay" onclick="closeSidebar()"></div>
+        <header>
+            <div class="header-top">
+                <h1>Планер навчання</h1>
+                <div class="header-controls">
+                    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Меню">☰</button>
+                    <button class="auth-btn login-btn" onclick="location.href='auth.html?action=login'">Увійти</button>
+                    <button class="auth-btn register-btn" onclick="location.href='auth.html?action=register'">Зареєструватись</button>
+                    <button class="theme-toggle" onclick="toggleTheme()" title="Переключити тему">🌙</button>
+                    <span id="userInfo" class="user-info" style="display:none">Привіт, <strong id="currentUserName"></strong> <button class="auth-btn" onclick="logoutUser()">Вийти</button></span>
+                </div>
+            </div>
+        <p>Організуй своє домашнє завдання</p>
+        </header>
+
+        <!-- Статистика -->
+        <div class="stats-section">
+            <div class="stat-card">
+                <span class="stat-label">Всього дз</span>
+                <span class="stat-value" id="totalTasks">0</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Зроблено</span>
+                <span class="stat-value" id="completedTasks">0</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Процент</span>
+                <span class="stat-value" id="completionPercent">0%</span>
+            </div>
+        </div>
+
+        <main>
+            <div class="sidebar">
+                <h2>Предмети</h2>
+                
+                <div class="add-subject">
+                    <input type="text" id="newSubject" placeholder="Новий предмет" />
+                    <button onclick="addSubject()">➕</button>
+                </div>
+
+                <ul id="subjectList" class="subject-list">
+                    <li class="subject-item active" onclick="selectSubject(this, 'Алгебра')">
+                        <span>Алгебра</span>
+                    </li>
+                    <li class="subject-item" onclick="selectSubject(this, 'Укр мова')">
+                        <span>Укр мова</span>
+                    </li>
+                    <li class="subject-item" onclick="selectSubject(this, 'Англ мова')">
+                        <span>Англ мова</span>
+                    </li>
+                    <li class="subject-item" onclick="selectSubject(this, 'Физика')">
+                        <span>Фізика</span>
+                    </li>
+                    <li class="subject-item" onclick="selectSubject(this, 'Химия')">
+                        <span>Хімія</span>
+                    </li>
+                    <li class="subject-item" onclick="selectSubject(this, 'Информатика')">
+                        <span>Інформатика</span>
+                    </li>
+                    <li class="subject-item" onclick="selectSubject(this, 'Физра')">
+                        <span>Фізкультура</span>
+                    </li>
+                    <li class="subject-item" onclick="selectSubject(this, 'Економика')">
+                        <span>Економика</span>
+                    </li>
+                    <li class="subject-item" onclick="selectSubject(this, 'География')">
+                        <span>География</span>
+                    </li>
+                    <li class="subject-item" onclick="selectSubject(this, 'Зарубежка')">
+                        <span>Зарубіжна література</span>
+                    </li>
+                    <li class="subject-item" onclick="selectSubject(this, 'Биология')">
+                        <span>Біологія</span>
+                    </li>
+                    <li class="subject-item" onclick="selectSubject(this, 'Правознавство')">
+                        <span>Правознавство</span>
+                    </li>
+                    <li class="subject-item" onclick="selectSubject(this, 'Мистецтво')">
+                        <span>Мистецтво</span>
+                    </li>
+                    <li class="subject-item" onclick="selectSubject(this, 'ОДД')">
+                        <span>ОДД</span>
+                    </li>
+                    <li class="subject-item" onclick="selectSubject(this, 'Укр література')">
+                        <span>Укр література</span>
+                    </li>
+                    <li class="subject-item" onclick="selectSubject(this, 'Технология')">
+                        <span>Технология</span>
+                    </li>
+                    <li class="subject-item" onclick="selectSubject(this, 'Основи податків')">
+                        <span>Основи податків</span>
+                    </li>
+                    <li class="subject-item" onclick="selectSubject(this, 'Основи здоровья')">
+                        <span>Основи здоровья</span>
+                    </li>
+                    <li class="subject-item" onclick="selectSubject(this, 'Геометрия')">
+                        <span>Геометрия</span>
+                    </li>
+                    <li class="subject-item" onclick="selectSubject(this, 'История')">
+                        <span>История</span>
+                    </li>
+                    <li class="subject-item" onclick="selectSubject(this, 'STEM')">
+                        <span>STEM</span>
+                    </li>
+                    <li class="subject-item" onclick="selectSubject(this, 'Зарубережна література')">
+                        <span>Зарубіжна література</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="content">
+                <div class="subject-header">
+                    <h2 id="currentSubject"> Алгебра</h2>
+                    <button id="deleteSubjectBtn" class="delete-btn" onclick="deleteCurrentSubject()" style="display: none;">Видалити</button>
+                </div>
+
+                <!-- Поиск и фильтры -->
+                <div class="filter-section">
+                    <input type="text" id="searchInput" placeholder="Пошук ДЗ..." onkeyup="filterTasks()">
+                    <select id="filterSelect" onchange="filterTasks()">
+                        <option value="all">Усі</option>
+                        <option value="active">Активні</option>
+                        <option value="completed">Виконані</option>
+                        <option value="high">Високий пріоритет</option>
+                    </select>
+                </div>
+
+                <!-- Добавление ДЗ -->
+                <div class="task-input-section">
+                    <h3>Додати домашнє завдання</h3>
+                    <div class="input-group">
+                        <input type="text" id="taskInput" placeholder="Введіть завдання..." />
+                        <input type="date" id="taskDate" />
+                        <select id="prioritySelect">
+                            <option value="low">Приоритет: Низкий</option>
+                            <option value="medium" selected>Приоритет: Средний</option>
+                            <option value="high">Приоритет: Высокий</option>
+                        </select>
+                        <select id="difficultySelect">
+                            <option value="1">Складність: Легко</option>
+                            <option value="2" selected>Складність: Середньо</option>
+                            <option value="3">Складність: Складно</option>
+                            <option value="4">Складність: Дуже складно</option>
+                            <option value="5">Складність: Екстра</option>
+                        </select>
+                        <button onclick="openTaskModal()">Добавить</button>
+                    </div>
+                    <textarea id="taskNotes" placeholder="Замітки..." style="width: 100%; min-height: 60px; margin-top: 10px;"></textarea>
+                </div>
+
+                <!-- Задачи -->
+                <div class="tasks-section">
+                    <div class="tabs">
+                        <button class="tab active" onclick="switchTab('active')">Активні</button>
+                        <button class="tab" onclick="switchTab('completed')">Виконані</button>
+                        <button class="tab" onclick="switchTab('calendar')">Календар</button>
+                    </div>
+
+                    <div id="activeTab" class="tab-content active">
+                        <ul id="taskList" class="task-list"></ul>
+                        <div id="emptyMessage" class="empty-message">
+                            <p>Немає активних задач 😌</p>
+                        </div>
+                    </div>
+
+                    <div id="completedTab" class="tab-content">
+                        <ul id="completedList" class="task-list"></ul>
+                        <div id="emptyCompletedMessage" class="empty-message">
+                            <p>Немає завершених задач</p>
+                        </div>
+                    </div>
+
+                    <div id="calendarTab" class="tab-content">
+                        <div id="calendar" class="calendar-widget"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Login / Register modals -->
+    <div id="loginModal" class="modal" onclick="if(event.target===this) closeModal('loginModal')">
+        <div class="modal-content">
+            <h3>Увійти</h3>
+            <input id="loginUsername" placeholder="Логін" />
+            <input id="loginPassword" type="password" placeholder="Пароль" />
+            <div style="display:flex;gap:8px;margin-top:10px;">
+                <button onclick="loginUser()" class="auth-btn register-btn">Увійти</button>
+                <button onclick="closeModal('loginModal')" class="auth-btn">Скасувати</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="registerModal" class="modal" onclick="if(event.target===this) closeModal('registerModal')">
+        <div class="modal-content">
+            <h3>Реєстрація</h3>
+            <input id="regUsername" placeholder="Логін" />
+            <input id="regPassword" type="password" placeholder="Пароль" />
+            <input id="regConfirm" type="password" placeholder="Підтвердити пароль" />
+            <div style="display:flex;gap:8px;margin-top:10px;">
+                <button onclick="registerUser()" class="auth-btn register-btn">Зареєструватись</button>
+                <button onclick="closeModal('registerModal')" class="auth-btn">Скасувати</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const subjects = {};
+        let currentSubject = 'Алгебра';
+        let currentFilter = 'all';
+        let currentTab = 'active';
+        let currentStars = 3;
+        let isDarkTheme = localStorage.getItem('darkTheme') === 'true';
+
+        function init() {
+            if (isDarkTheme) document.body.classList.add('dark-theme');
+            loadFromStorage();
+            renderTasks();
+            updateStats();
+            setStars(3);
+        }
+
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.body.classList.toggle('dark-theme');
+            localStorage.setItem('darkTheme', isDarkTheme);
+        }
+
+        // --- Simple auth (localStorage) ---
+        const users = {};
+        let currentUser = localStorage.getItem('plannerCurrentUser') || null;
+
+        function loadUsers() {
+            const stored = localStorage.getItem('plannerUsers');
+            if (stored) {
+                try { Object.assign(users, JSON.parse(stored)); } catch(e) { }
+            }
+        }
+
+        function saveUsers() {
+            localStorage.setItem('plannerUsers', JSON.stringify(users));
+        }
+
+        function openLogin() {
+            // backward-compatible: redirect to auth page
+            location.href = 'auth.html?action=login';
+        }
+
+        function openRegister() {
+            // backward-compatible: redirect to auth page
+            location.href = 'auth.html?action=register';
+        }
+
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('open');
+        }
+
+        function registerUser() {
+            const username = document.getElementById('regUsername').value.trim();
+            const password = document.getElementById('regPassword').value;
+            const confirm = document.getElementById('regConfirm').value;
+            if (!username || !password) { showNotification('Введіть логін і пароль'); return; }
+            if (password !== confirm) { showNotification('Паролі не співпадають'); return; }
+            if (users[username]) { showNotification('Користувач вже існує'); return; }
+            users[username] = { pwd: btoa(password) };
+            saveUsers();
+            currentUser = username;
+            localStorage.setItem('plannerCurrentUser', currentUser);
+            // clear inputs
+            document.getElementById('regUsername').value = '';
+            document.getElementById('regPassword').value = '';
+            document.getElementById('regConfirm').value = '';
+            updateAuthUI();
+            closeModal('registerModal');
+            showNotification('Реєстрація успішна');
+        }
+
+        function loginUser() {
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value;
+            if (!username || !password) { showNotification('Введіть логін і пароль'); return; }
+            if (!users[username] || users[username].pwd !== btoa(password)) { showNotification('Невірні дані'); return; }
+            currentUser = username;
+            localStorage.setItem('plannerCurrentUser', currentUser);
+            // clear inputs
+            document.getElementById('loginUsername').value = '';
+            document.getElementById('loginPassword').value = '';
+            updateAuthUI();
+            closeModal('loginModal');
+            showNotification('Вхід успішний');
+        }
+
+        function logoutUser() {
+            currentUser = null;
+            localStorage.removeItem('plannerCurrentUser');
+            updateAuthUI();
+            showNotification('Ви вийшли');
+        }
+
+        function updateAuthUI() {
+            const userInfo = document.getElementById('userInfo');
+            const userNameEl = document.getElementById('currentUserName');
+            const loginBtns = document.querySelectorAll('.login-btn, .register-btn');
+            if (currentUser) {
+                loginBtns.forEach(b => b.style.display = 'none');
+                userInfo.style.display = 'inline-flex';
+                userNameEl.textContent = currentUser;
+            } else {
+                loginBtns.forEach(b => b.style.display = 'inline-block');
+                userInfo.style.display = 'none';
+                userNameEl.textContent = '';
+            }
+        }
+
+        function toggleSidebar() {
+            const sb = document.querySelector('.sidebar');
+            if (!sb) return;
+            sb.classList.toggle('open');
+            const ov = document.getElementById('overlay');
+            if (sb.classList.contains('open')) ov.classList.add('open'); else ov.classList.remove('open');
+        }
+
+        function closeSidebar(){
+            const sb = document.querySelector('.sidebar');
+            const ov = document.getElementById('overlay');
+            if(sb) sb.classList.remove('open');
+            if(ov) ov.classList.remove('open');
+        }
+
+        loadUsers();
+        updateAuthUI();
+
+        function addSubject() {
+            const input = document.getElementById('newSubject');
+            const subjectName = input.value.trim();
+            
+            if (!subjectName) {
+                alert('Введіть назву предмета');
+                return;
+            }
+            if (subjects[subjectName]) {
+                alert('Такий предмет вже існує');
+                return;
+            }
+
+            subjects[subjectName] = [];
+            input.value = '';
+            renderSubjects();
+            saveToStorage();
+        }
+
+        function selectSubject(element, subjectName) {
+            document.querySelectorAll('.subject-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            element.classList.add('active');
+            
+            currentSubject = subjectName;
+            document.getElementById('currentSubject').textContent = subjectName;
+            
+            const deleteBtn = document.getElementById('deleteSubjectBtn');
+            const isDefault = ['Алгебра', 'Укр мова', 'Англ мова', 'Фізика', 'Хімія', 'Інформатика', 'Фізкультура', 'Економіка', 'Географія', 'Зарубежка', 'Біологія', 'Правознавство', 'Мистецтво', 'ОДД', 'Укр література', 'Технологія', 'Основи податків', 'Основи здоров\'я', 'Геометрія', 'Історія', 'STEM', 'Зарубережна література'].includes(subjectName);
+            deleteBtn.style.display = isDefault ? 'none' : 'block';
+            
+            currentFilter = 'all';
+            document.getElementById('filterSelect').value = 'all';
+            document.getElementById('searchInput').value = '';
+            
+            currentTab = 'active';
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelector('.tab').classList.add('active');
+            document.getElementById('activeTab').classList.add('active');
+            
+            renderTasks();
+            // on small screens close sidebar automatically after selecting a subject
+            if (window.innerWidth <= 700) {
+                closeSidebar();
+            }
+        }
+
+        function deleteCurrentSubject() {
+            if (confirm('Видалити предмет і всі його завдання?')) {
+                delete subjects[currentSubject];
+                currentSubject = 'Алгебра';
+                renderSubjects();
+                selectSubject(document.querySelector('.subject-item') || document.querySelector('.subject-item.active'), 'Алгебра');
+                saveToStorage();
+            }
+        }
+
+        function setStars(num) {
+            currentStars = num;
+            const stars = document.querySelectorAll('.stars .star');
+            stars.forEach((star, index) => {
+                if (index < num) {
+                    star.classList.add('active');
+                } else {
+                    star.classList.remove('active');
+                }
+            });
+        }
+
+        function openTaskModal() {
+            const taskInput = document.getElementById('taskInput');
+            const taskDate = document.getElementById('taskDate');
+            const prioritySelect = document.getElementById('prioritySelect');
+            const difficultySelect = document.getElementById('difficultySelect');
+            const taskNotes = document.getElementById('taskNotes');
+            const taskText = taskInput.value.trim();
+            const dueDate = taskDate.value;
+            const priority = prioritySelect.value;
+            const difficulty = parseInt(difficultySelect.value);
+            const notes = taskNotes.value.trim();
+            
+            if (!taskText) {
+                alert('Введіть завдання');
+                return;
+            }
+            
+            if (!subjects[currentSubject]) {
+                subjects[currentSubject] = [];
+            }
+            
+            subjects[currentSubject].push({
+                text: taskText,
+                date: dueDate,
+                priority: priority,
+                difficulty: difficulty,
+                notes: notes,
+                completed: false,
+                id: Date.now(),
+                completedDate: null
+            });
+            
+            taskInput.value = '';
+            taskDate.value = '';
+            prioritySelect.value = 'medium';
+            difficultySelect.value = '2';
+            taskNotes.value = '';
+            renderTasks();
+            updateStats();
+            saveToStorage();
+            showNotification('Задача додана! ✅');
+        }
+
+        function showNotification(message) {
+            const notif = document.createElement('div');
+            notif.className = 'notification';
+            notif.textContent = message;
+            document.body.appendChild(notif);
+            setTimeout(() => notif.remove(), 3000);
+        }
+
+        function filterTasks() {
+            currentFilter = document.getElementById('filterSelect').value;
+            renderTasks();
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            
+            const tabs = document.querySelectorAll('.tab');
+            if (tab === 'active') {
+                tabs[0].classList.add('active');
+                document.getElementById('activeTab').classList.add('active');
+            } else if (tab === 'completed') {
+                tabs[1].classList.add('active');
+                document.getElementById('completedTab').classList.add('active');
+            } else if (tab === 'calendar') {
+                tabs[2].classList.add('active');
+                document.getElementById('calendarTab').classList.add('active');
+                renderCalendar();
+            }
+        }
+
+        function renderTasks() {
+            const taskList = document.getElementById('taskList');
+            const completedList = document.getElementById('completedList');
+            const emptyMessage = document.getElementById('emptyMessage');
+            const emptyCompletedMessage = document.getElementById('emptyCompletedMessage');
+            
+            taskList.innerHTML = '';
+            completedList.innerHTML = '';
+            
+            const tasks = subjects[currentSubject] || [];
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            let activeTasks = [];
+            let completedTasks = [];
+            
+            tasks.forEach(task => {
+                if (!task.text.toLowerCase().includes(searchTerm)) return;
+                
+                if (task.completed) {
+                    completedTasks.push(task);
+                } else {
+                    activeTasks.push(task);
+                }
+            });
+
+            activeTasks = activeTasks.filter(task => {
+                if (currentFilter === 'high') return task.priority === 'high';
+                return true;
+            });
+
+            emptyMessage.style.display = activeTasks.length === 0 ? 'block' : 'none';
+            emptyCompletedMessage.style.display = completedTasks.length === 0 ? 'block' : 'none';
+
+            activeTasks.forEach(task => {
+                taskList.appendChild(createTaskElement(task));
+            });
+
+            completedTasks.forEach(task => {
+                completedList.appendChild(createTaskElement(task));
+            });
+        }
+
+        function createTaskElement(task) {
+            const li = document.createElement('li');
+            li.className = 'task-item';
+            
+            if (task.priority === 'high') li.classList.add('priority-high');
+            if (task.priority === 'medium') li.classList.add('priority-medium');
+            if (task.priority === 'low') li.classList.add('priority-low');
+            
+            let difficultyText = '';
+            if (task.difficulty === 1) difficultyText = 'Легко';
+            else if (task.difficulty === 2) difficultyText = 'Среднє';
+            else if (task.difficulty === 3) difficultyText = 'Складно';
+            else if (task.difficulty === 4) difficultyText = 'Дуже складно';
+            else if (task.difficulty === 5) difficultyText = 'Екстра';
+            
+            let priorityText = '';
+            if (task.priority === 'high') priorityText = 'Високий';
+            else if (task.priority === 'medium') priorityText = 'Середній';
+            else if (task.priority === 'low') priorityText = 'Низький';
+            
+            const dateStr = task.date ? new Date(task.date).toLocaleDateString('ru-RU') : '';
+            
+            li.innerHTML = `
+                <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask(${task.id})">
+                <div class="task-content">
+                    <span class="task-text ${task.completed ? 'completed' : ''}">${task.text}</span>
+                    <div class="task-meta">
+                        ${task.date ? `<span class="task-date">${dateStr}</span>` : ''}
+                        <span class="task-priority">Приоритет: ${priorityText}</span>
+                        <span class="task-difficulty">Складність: ${difficultyText}</span>
+                    </div>
+                    ${task.notes ? `<div class="task-notes">Замітка: ${task.notes}</div>` : ''}
+                </div>
+                <button class="delete-btn" onclick="deleteTask(${task.id})">🗑️</button>
+            `;
+            
+            return li;
+        }
+
+        function toggleTask(taskId) {
+            const task = subjects[currentSubject].find(t => t.id === taskId);
+            if (task) {
+                task.completed = !task.completed;
+                task.completedDate = task.completed ? new Date().toISOString() : null;
+                renderTasks();
+                updateStats();
+                saveToStorage();
+            }
+        }
+
+        function deleteTask(taskId) {
+            subjects[currentSubject] = subjects[currentSubject].filter(t => t.id !== taskId);
+            renderTasks();
+            updateStats();
+            saveToStorage();
+        }
+
+        function updateStats() {
+            let totalTasks = 0;
+            let completedTasks = 0;
+            
+            for (let subject in subjects) {
+                subjects[subject].forEach(task => {
+                    totalTasks++;
+                    if (task.completed) completedTasks++;
+                });
+            }
+            
+            document.getElementById('totalTasks').textContent = totalTasks;
+            document.getElementById('completedTasks').textContent = completedTasks;
+            document.getElementById('completionPercent').textContent = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) + '%' : '0%';
+        }
+
+        function renderCalendar() {
+            const calendar = document.getElementById('calendar');
+            calendar.innerHTML = '<p>Календарь завантажується...</p>';
+            
+            const today = new Date();
+            const month = today.getMonth();
+            const year = today.getFullYear();
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            
+            let html = `<div class="calendar"><h3>${firstDay.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })}</h3>`;
+            html += '<div class="calendar-grid">';
+            
+            const daysOfWeek = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд'];
+            daysOfWeek.forEach(day => html += `<div class="calendar-header">${day}</div>`);
+            
+            for (let i = 0; i < firstDay.getDay() - 1; i++) {
+                html += '<div></div>';
+            }
+            
+            for (let day = 1; day <= lastDay.getDate(); day++) {
+                const date = new Date(year, month, day).toISOString().split('T')[0];
+                let count = 0;
+                for (let subject in subjects) {
+                    count += subjects[subject].filter(t => t.date === date && !t.completed).length;
+                }
+                html += `<div class="calendar-day ${count > 0 ? 'has-tasks' : ''}">${day}${count > 0 ? `<span>(${count})</span>` : ''}</div>`;
+            }
+            
+            html += '</div></div>';
+            calendar.innerHTML = html;
+        }
+
+        function exportData() {
+            let text = '=== НАВЧАЛЬНИЙ ПЛАНЕР ===\n\n';
+            for (let subject in subjects) {
+                text += `\n📚 ${subject}\n`;
+                text += '-'.repeat(40) + '\n';
+                const tasks = subjects[subject];
+                if (tasks.length === 0) {
+                    text += 'Немає завдань\n';
+                } else {
+                    tasks.forEach(task => {
+                        const status = task.completed ? '✅' : '📝';
+                        const priority = task.priority === 'high' ? '🔴' : task.priority === 'medium' ? '🟡' : '🟢';
+                        const stars = '⭐'.repeat(task.difficulty) + '☆'.repeat(5 - task.difficulty);
+                        text += `${status} ${priority} ${task.text}\n`;
+                        text += `   ${stars} | ${task.date || 'Без дати'}\n`;
+                        if (task.notes) text += `   Замітка: ${task.notes}\n`;
+                        text += '\n';
+                    });
+                }
+            }
+            
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `планер_${new Date().toISOString().split('T')[0]}.txt`;
+            link.click();
+        }
+
+        function saveToStorage() {
+            localStorage.setItem('plannerSubjects', JSON.stringify(subjects));
+        }
+
+        function loadFromStorage() {
+            const stored = localStorage.getItem('plannerSubjects');
+            if (stored) {
+                const loaded = JSON.parse(stored);
+                for (let subject in loaded) {
+                    subjects[subject] = loaded[subject];
+                }
+            } else {
+                const defaultSubjects = ['Алгебра', 'Укр мова', 'Англ мова', 'Фізика', 'Хиімія', 'Інформатика', 'Фізкультура', 'Економіка', 'Географія', 'Зарубіжна література', 'Бі    ология', 'Правознавство', 'Мистецтво', 'ОДД', 'Укр література', 'Технология', 'Основи податків', 'Основи здоровья', 'Геометрия', 'История', 'STEM', 'Зарубережна література'];
+                defaultSubjects.forEach(subject => subjects[subject] = []);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

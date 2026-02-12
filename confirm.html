@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Підтвердження Email</title>
+<style>
+    :root{--bg:#f6f8fb;--card:#fff;--accent:#6b5dd3;--text:#222}
+    body{font-family:Segoe UI, Tahoma, Verdana,sans-serif;background:var(--bg);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .card{background:var(--card);padding:22px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.08);width:100%;max-width:420px}
+    h2{margin:0 0 12px;color:var(--text)}
+    input{padding:10px;border-radius:8px;border:2px solid #e6e9f0;width:100%}
+    .actions{display:flex;gap:8px;margin-top:10px}
+    .actions button{flex:1;padding:10px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer}
+    .actions .alt{background:#e6e9f0;color:var(--text)}
+    .note{font-size:0.95rem;color:#444;margin-top:8px}
+    .msg{padding:8px;border-radius:8px;background:#e9f7ef;color:#176c2e;border:1px solid #cfeee0}
+    .err{background:#ffecec;color:#8a1f1f;border:1px solid #ffd4d4}
+    .small{font-size:0.9rem;color:#666}
+    .sim{font-size:0.9rem;color:#333;background:#f0f4ff;padding:8px;border-radius:6px;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="card">
+    <h2>Підтвердження Email</h2>
+    <div id="info"></div>
+    <div id="identity" class="small" style="margin-top:8px;display:none"></div>
+    <div style="margin-top:8px">
+        <input id="codeInput" placeholder="Введіть код підтвердження" />
+    </div>
+    <div class="actions">
+        <button id="verifyBtn">Підтвердити</button>
+        <button id="resendBtn" class="alt">Надіслати код ще раз</button>
+    </div>
+    <div id="sim" class="sim" style="display:none"></div>
+    <p class="note small">Повернутись на <a href="index.html">головну</a></p>
+</div>
+
+<script>
+(function(){
+    // Configuration: endpoint для отправки кода.
+    // По умолчанию используем тот же origin, с которого загружена страница
+    // (это позволяет работать через public tunnel вроде localtunnel/ngrok).
+    // Если открываете файл локально (file://), используется IP сервера по-умолчанию.
+    const DEFAULT_API = 'http://26.162.157.25:3000/send-code';
+    const API_URL = (location.protocol === 'file:') ? DEFAULT_API : (location.origin + '/send-code');
+    function q(id){return document.getElementById(id)}
+    const params = new URLSearchParams(location.search);
+    const user = params.get('user');
+    if(!user){ location.href='index.html'; return; }
+
+    let users = JSON.parse(localStorage.getItem('plannerUsers')||'{}');
+    let confirmations = JSON.parse(localStorage.getItem('plannerConfirmations')||'{}');
+
+    function showMsg(text, isErr){ q('info').innerHTML = '<div class="'+(isErr? 'err':'msg')+'">'+text+'</div>'; setTimeout(()=>q('info').innerHTML='',3500); }
+
+    function updateConfirmations(){ localStorage.setItem('plannerConfirmations', JSON.stringify(confirmations)); }
+
+    function sendViaEmailJS(email, code){
+        if(!window.emailjs){
+            return Promise.reject(new Error('EmailJS not loaded'));
+        }
+        // template params: adjust keys according to your EmailJS template
+        const templateParams = { to_email: email, code: code, username: user };
+        return emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
+    }
+
+    async function generateAndSend(){
+        const code = String(Math.floor(100000 + Math.random()*900000));
+        confirmations[user] = { code: code, expires: Date.now()+15*60*1000, email: users[user] ? users[user].email : '' };
+        updateConfirmations();
+
+        const email = confirmations[user].email;
+        if(API_URL){
+            try{
+                const resp = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, username: user, code: code }),
+                    cache: 'no-store'
+                });
+                const data = await resp.json().catch(()=>null);
+                if(data && data.ok){
+                    showMsg('Код надіслано на email. Перевірте пошту.');
+                    return;
+                } else if (data && data.simulated) {
+                    // server is in simulation mode (no SMTP configured)
+                    showMsg('Сервер працює в режимі симуляції — код записаний у лог сервера.', true);
+                    return;
+                } else {
+                    // server returned non-ok — inform user
+                    showMsg('Помилка відправки. Спробуйте пізніше.', true);
+                    return;
+                }
+            }catch(err){
+                // network error — inform user
+                console.error('Fetch error sending code:', err);
+                showMsg('Не вдалося звʼязатися з сервером. Перевірте, що сервер запущено.', true);
+                return;
+            }
+        } else {
+            // no API configured — inform developer/user
+            showMsg('API не налаштовано. Зверніться до адміністратора або налаштуйте сервер.', true);
+        }
+    }
+
+    // initial
+    if(!users[user]){ showMsg('Користувача не знайдено', true); setTimeout(()=>location.href='auth.html',1500); }
+    // if confirmation already exists but expired, regenerate
+    if(!confirmations[user] || confirmations[user].expires < Date.now()){
+        generateAndSend();
+    } else {
+        // do not show code; attempt to resend via configured provider to re-send
+        generateAndSend();
+    }
+
+    q('verifyBtn').addEventListener('click', ()=>{
+        const entered = (q('codeInput').value||'').trim();
+        if(!entered){ showMsg('Введіть код', true); return; }
+        const entry = confirmations[user];
+        if(!entry){ showMsg('Код не знайдено. Попросіть новий.', true); return; }
+        if(entry.expires < Date.now()){ showMsg('Код прострочений. Надішліть ще раз.', true); return; }
+        if(entered !== entry.code){ showMsg('Невірний код', true); return; }
+        // success: помечаем и показываем информацию об идентификации
+        users = JSON.parse(localStorage.getItem('plannerUsers')||'{}');
+        if(users[user]){ users[user].verified = true; localStorage.setItem('plannerUsers', JSON.stringify(users)); }
+        delete confirmations[user]; updateConfirmations();
+        localStorage.setItem('plannerCurrentUser', user);
+        showMsg('Email підтверджено. Ви увійшли.');
+        showIdentity(user);
+        setTimeout(()=>location.href='index.html',1200);
+    });
+
+    q('resendBtn').addEventListener('click', ()=>{
+        generateAndSend();
+        showMsg('Код надіслано знову (якщо налаштовано).');
+    });
+
+    function showIdentity(uid){
+        const u = JSON.parse(localStorage.getItem('plannerUsers')||'{}')[uid] || {};
+        const email = u.email || (confirmations[uid] && confirmations[uid].email) || uid;
+        q('identity').style.display = 'block';
+        q('identity').innerHTML = 'Ви увійшли як <strong>'+email+'</strong>.' +
+            ' <button id="logoutBtn" class="alt" style="margin-left:8px;padding:6px;border-radius:6px;border:none;cursor:pointer">Вийти</button>';
+        q('codeInput').style.display = 'none';
+        q('verifyBtn').style.display = 'none';
+        q('resendBtn').style.display = 'none';
+        const lb = q('logoutBtn');
+        if(lb) lb.addEventListener('click', ()=>{
+            localStorage.removeItem('plannerCurrentUser');
+            showMsg('Ви вийшли.');
+            setTimeout(()=>location.href='index.html',700);
+        });
+    }
+
+    // Якщо користувач вже залогінений і підтверджений — показати інфо
+    const current = localStorage.getItem('plannerCurrentUser');
+    if(current && users[current] && users[current].verified){
+        showIdentity(current);
+        return;
+    }
+
+})();
+</script>
+</body>
+</html>

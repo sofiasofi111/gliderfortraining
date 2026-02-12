@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Аутентифікація</title>
+    <style>
+        :root{--bg:#f6f8fb;--card:#fff;--accent:#6b5dd3;--text:#222}
+        body{font-family:Segoe UI, Tahoma, Verdana,sans-serif;background:var(--bg);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+        .card{background:var(--card);padding:22px;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,0.08);width:100%;max-width:420px}
+        h2{margin:0 0 12px;color:var(--text)}
+        .nav{display:flex;gap:8px;margin-bottom:16px}
+        .nav button{flex:1;padding:8px;border-radius:8px;border:2px solid transparent;background:#f0f2fb;cursor:pointer}
+        .nav button.active{background:var(--accent);color:#fff;font-weight:700}
+        form{display:flex;flex-direction:column;gap:10px}
+        input{padding:10px;border-radius:8px;border:2px solid #e6e9f0}
+        .actions{display:flex;gap:8px;margin-top:6px}
+        .actions button{flex:1;padding:10px;border-radius:8px;border:none;background:var(--accent);color:#fff;cursor:pointer}
+        .actions .alt{background:#e6e9f0;color:var(--text)}
+        .note{font-size:0.95rem;color:#444;margin-top:8px}
+        .msg{padding:8px;border-radius:8px;background:#e9f7ef;color:#176c2e;border:1px solid #cfeee0}
+        .err{background:#ffecec;color:#8a1f1f;border:1px solid #ffd4d4}
+        .small{font-size:0.9rem;color:#666}
+        a{color:var(--accent);text-decoration:none}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 id="title">Аутентифікація</h2>
+        <div class="nav">
+            <button id="btnLogin">Увійти</button>
+            <button id="btnRegister">Реєстрація</button>
+        </div>
+
+        <div id="content"></div>
+        <p class="note small">Повернутись на <a href="index.html">головну</a></p>
+    </div>
+
+<script>
+// Simple auth page that uses localStorage keys: plannerUsers and plannerCurrentUser
+(function(){
+    // API endpoint для отправки кода
+    const DEFAULT_API = 'http://26.162.157.25:3000/send-code';
+    const API_URL = (location.protocol === 'file:') ? DEFAULT_API : (location.origin + '/send-code');
+    
+    function qs(sel){return document.querySelector(sel)}
+    function q(id){ if(!id) return null; return id[0] === '#' ? document.querySelector(id) : document.getElementById(id); }
+
+    const params = new URLSearchParams(location.search);
+    let mode = params.get('action') === 'register' ? 'register' : 'login';
+
+    const users = JSON.parse(localStorage.getItem('plannerUsers')||'{}');
+
+    function render(){
+        q('title').textContent = mode === 'register' ? 'Реєстрація' : 'Увійти';
+        q('#btnLogin').classList.toggle('active', mode==='login');
+        q('#btnRegister').classList.toggle('active', mode==='register');
+
+        if(mode==='login') renderLogin(); else renderRegister();
+    }
+
+    function sanitize(v){return (v||'').trim()}
+
+    function renderLogin(){
+        const html = `
+            <div id="msg"></div>
+            <form id="loginForm">
+                <input id="loginIdent" placeholder="Логін або email" />
+                <input id="loginPassword" type="password" placeholder="Пароль" />
+                <div class=\"actions\">
+                    <button type="button" id="doLogin">Увійти</button>
+                    <button type="button" class="alt" id="toRegister">Реєстрація</button>
+                </div>
+            </form>
+        `;
+        q('#content').innerHTML = html;
+        q('#doLogin').addEventListener('click', login);
+        q('#toRegister').addEventListener('click', ()=>{ mode='register'; render(); });
+    }
+
+    function renderRegister(){
+        const html = `
+            <div id="msg"></div>
+            <form id="regForm">
+                <input id="regEmail" placeholder="Email" />
+                <input id="regUsername" placeholder="Логін" />
+                <input id="regPassword" type="password" placeholder="Пароль" />
+                <input id="regConfirm" type="password" placeholder="Підтвердити пароль" />
+                <div class=\"actions\">
+                    <button type="button" id="doRegister">Зареєструватись</button>
+
+                    <button type="button" class="alt" id="toLogin">Увійти</button>
+                </div>
+            </form>
+        `;
+        q('#content').innerHTML = html;
+        q('#doRegister').addEventListener('click', register);
+        q('#toLogin').addEventListener('click', ()=>{ mode='login'; render(); });
+    }
+
+    function showMessage(text, isError){
+        const box = q('#msg');
+        box.innerHTML = `<div class=\"${isError? 'err':'msg'}\">${text}</div>`;
+        setTimeout(()=>{ if(box) box.innerHTML='' }, 3500);
+    }
+
+    function register(){
+        const email = sanitize(q('#regEmail').value);
+        const username = sanitize(q('#regUsername').value);
+        const pass = q('#regPassword').value;
+        const conf = q('#regConfirm').value;
+        if(!email || !username || !pass){ showMessage('Заповніть всі поля', true); return; }
+        if(pass !== conf){ showMessage('Паролі не співпадають', true); return; }
+        // check unique email and username
+        for(const u in users){ if(users[u].email === email){ showMessage('Email вже використовується', true); return; } }
+        if(users[username]){ showMessage('Логін вже зайнятий', true); return; }
+
+        // Create user as unverified
+        users[username] = { email: email, pwd: btoa(pass), verified: false };
+        localStorage.setItem('plannerUsers', JSON.stringify(users));
+
+        // Generate and save code
+        const confirmations = JSON.parse(localStorage.getItem('plannerConfirmations')||'{}');
+        const code = String(Math.floor(100000 + Math.random()*900000));
+        confirmations[username] = { code: code, expires: Date.now()+15*60*1000, email: email };
+        localStorage.setItem('plannerConfirmations', JSON.stringify(confirmations));
+
+        // Send code via API
+        if(API_URL){
+            const body = JSON.stringify({ email: email, username: username, code: code });
+            fetch(API_URL, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: body, cache: 'no-store', timeout: 10000
+            }).then(r => {
+                if(!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            }).then(data => {
+                if(data && (data.ok || data.simulated)){
+                    showMessage('Код надіслано на email.');
+                    setTimeout(()=> location.href = 'confirm.html?user=' + encodeURIComponent(username), 800);
+                } else {
+                    console.warn('Send-code returned non-ok:', data);
+                    showMessage('Помилка відправки коду.', true);
+                    setTimeout(()=> location.href = 'confirm.html?user=' + encodeURIComponent(username), 1500);
+                }
+            }).catch(err => {
+                console.error('Fetch error:', err);
+                showMessage('Не вдалося відправити код, але профіль створено.', true);
+                setTimeout(()=> location.href = 'confirm.html?user=' + encodeURIComponent(username), 1500);
+            });
+        } else {
+            showMessage('API не налаштовано.');
+            setTimeout(()=> location.href = 'confirm.html?user=' + encodeURIComponent(username), 800);
+        }
+    }
+
+    function login(){
+        const ident = sanitize(q('#loginIdent').value);
+        const pass = q('#loginPassword').value;
+        if(!ident || !pass){ showMessage('Введіть логін і пароль', true); return; }
+        // try find by username
+        if(users[ident] && users[ident].pwd === btoa(pass)){
+            if(users[ident].verified === false){
+                // needs verification
+                location.href = 'confirm.html?user=' + encodeURIComponent(ident);
+                return;
+            }
+            localStorage.setItem('plannerCurrentUser', ident);
+            location.href = 'index.html';
+            return;
+        }
+        // try find by email
+        for(const u in users){ if(users[u].email === ident && users[u].pwd === btoa(pass)){
+            if(users[u].verified === false){
+                location.href = 'confirm.html?user=' + encodeURIComponent(u);
+                return;
+            }
+            localStorage.setItem('plannerCurrentUser', u);
+            location.href = 'index.html';
+            return;
+        }}
+        showMessage('Невірні облікові дані', true);
+    }
+
+    // nav handlers
+    q('#btnLogin').addEventListener('click', ()=>{ mode='login'; render(); });
+    q('#btnRegister').addEventListener('click', ()=>{ mode='register'; render(); });
+
+    render();
+})();
+</script>
+</body>
+</html>
